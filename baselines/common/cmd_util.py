@@ -10,6 +10,7 @@ except ImportError:
 
 import gym
 from gym.wrappers import FlattenObservation, FilterObservation
+from collections import defaultdict
 from baselines import logger
 from baselines.bench import Monitor
 from baselines.common import set_global_seeds
@@ -184,7 +185,7 @@ def common_arg_parser():
     parser.add_argument('--debug', default=False, action='store_true')
     parser.add_argument('--bind_to_core', default=False, action='store_true')
     parser.add_argument('--alg_config', type=str, default="{}",
-                        help="algorithm config e.g., {'size_ensemble':8,'disagreement_fun_name':'var',}")
+                        help="algorithm config e.g., {'size_ensemble':8,'disagreement_fun_name':'var','disagreement_type':'min','priority_temperature':1.0,}")
     return parser
 
 def robotics_arg_parser():
@@ -218,3 +219,49 @@ def parse_unknown_args(args):
             preceded_by_key = False
 
     return retval
+
+
+def get_game_envs(print_out=False):
+    _game_envs = defaultdict(set)
+    for env in gym.envs.registry.all():
+        # TODO: solve this with regexes
+        try:
+            env_type = env.entry_point.split(':')[0].split('.')[-1]
+            _game_envs[env_type].add(env.id)
+        except:
+            pass
+    for key in _game_envs.keys():
+        if len(_game_envs[key]) > 1:
+            _game_envs[key] = sorted(_game_envs[key])
+        if print_out:
+            logger.info(f'\n{key}:')
+            for val in _game_envs[key]: logger.info(val)
+    return _game_envs
+
+def get_env_type(args, _game_envs):
+    env_id = args.env
+    if args.env_type is not None:
+        return args.env_type, env_id
+
+    # Re-parse the gym registry, since we could have new envs since last time.
+    for env in gym.envs.registry.all():
+        try:
+            env_type = env.entry_point.split(':')[0].split('.')[-1]
+            _game_envs[env_type].add(env.id)  # This is a set so add is idempotent
+        except:
+            pass
+
+    if env_id in _game_envs.keys():
+        env_type = env_id
+        env_id = [g for g in _game_envs[env_type]][0]
+    else:
+        env_type = None
+        for g, e in _game_envs.items():
+            if env_id in e:
+                env_type = g
+                break
+        if ':' in env_id:
+            env_type = re.sub(r':.*', '', env_id)
+        assert env_type is not None, 'env_id {} is not recognized in env types'.format(env_id, _game_envs.keys())
+
+    return env_type, env_id

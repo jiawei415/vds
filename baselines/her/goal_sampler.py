@@ -94,7 +94,7 @@ def make_sample_dummy_goals(sample_goals_fun):
 
 
 def make_goal_sampler_factory_random_init_ob(
-    sample_goals_fun, value_ensemble, policy, n_candidates, disagreement_fun_name
+    sample_goals_fun, value_ensemble, policy, n_candidates, disagreement_fun_name, disagreement_type="max", priority_temperature=1.0
 ):
     def goal_sampler(obs_dict):
         # return sample_goals_fun(1)[0]
@@ -130,18 +130,25 @@ def make_goal_sampler_factory_random_init_ob(
             # else:
             compute_disagreement_fun = FUN_NAME_TO_FUN[disagreement_fun_name]
             disagreement = compute_disagreement_fun(vals)
+            logger.logkv('ve/stats/disag_mean', np.mean(disagreement))
+            logger.logkv('ve/stats/disag_std', np.std(disagreement))
 
-            sum_disagreement = np.sum(disagreement)
+            if disagreement_type == "min":
+                    disagreement = np.max(disagreement) - disagreement + 1e-6
+            priority = disagreement**priority_temperature
+            priority = priority / np.sum(priority)
 
-            if np.allclose(sum_disagreement, 0):
-                logger.logkv('ve/stats/disag_mean', 0)
-                logger.logkv('ve/stats/disag_std', 0)
-                disagreement = None
-            else:
-                logger.logkv('ve/stats/disag_mean', np.mean(disagreement))
-                logger.logkv('ve/stats/disag_std', np.std(disagreement))
-                disagreement /= sum_disagreement
+            # sum_disagreement = np.sum(disagreement)
+            # if np.allclose(sum_disagreement, 0):
+            #     logger.logkv('ve/stats/disag_mean', 0)
+            #     logger.logkv('ve/stats/disag_std', 0)
+            #     disagreement = None
+            # else:
+            #     logger.logkv('ve/stats/disag_mean', np.mean(disagreement))
+            #     logger.logkv('ve/stats/disag_std', np.std(disagreement))
+            #     disagreement /= sum_disagreement
 
-            return all_states[np.random.choice(np.arange(n_candidates), p=disagreement)]
+
+            return all_states[np.random.choice(np.arange(n_candidates), p=priority)]
 
     return goal_sampler

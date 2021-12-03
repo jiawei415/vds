@@ -83,6 +83,8 @@ DEFAULT_PARAMS = {
     've_use_Q': True,  # not used by value_ensemble_v1
     've_use_double_network': True,
     'disagreement_fun_name': 'std',
+    'disagreement_type': 'max',
+    'priority_temperature': 1.0,
 
     # HER for value ensemble
     've_replay_strategy': 'none',  # supported modes: future, none
@@ -139,10 +141,7 @@ def prepare_params(kwargs):
 
     kwargs['make_env'] = make_env
     tmp_env = cached_make_env(kwargs['make_env'])
-    if kwargs['env_type'] == 'goal':
-        kwargs['T'] = tmp_env.env._max_episode_steps
-    else:
-        kwargs['T'] = tmp_env._max_episode_steps
+    kwargs['T'] = kwargs['max_episode_steps']
 
     kwargs['max_u'] = np.array(kwargs['max_u']) if isinstance(kwargs['max_u'], list) else kwargs['max_u']
     kwargs['gamma'] = 1. - 1. / kwargs['T']
@@ -190,7 +189,8 @@ def prepare_ve_params(kwargs):
 
     # goal sampler params
     gs_params = dict()
-    for name in ['n_candidates', 'disagreement_fun_name']:
+    for name in ['n_candidates', 'disagreement_fun_name',
+                 'disagreement_type', 'priority_temperature']:
         gs_params[name] = kwargs[name]
         kwargs['_' + name] = kwargs[name]
         del kwargs[name]
@@ -267,11 +267,12 @@ def configure_disagreement(params, value_ensemble, policy):
     )
     gs_params = params['gs_params']
     sample_disagreement_goals = make_goal_sampler_factory_random_init_ob(**disagreement_params,
-        n_candidates=gs_params["n_candidates"], disagreement_fun_name=gs_params["disagreement_fun_name"]
+        n_candidates=gs_params["n_candidates"], disagreement_fun_name=gs_params["disagreement_fun_name"],
+        disagreement_type=gs_params["disagreement_type"], priority_temperature=gs_params["priority_temperature"],
     )
 
     sample_uniform_goals = make_goal_sampler_factory_random_init_ob(**disagreement_params,
-        n_candidates=1, disagreement_fun_name='uniform',
+        n_candidates=1, disagreement_fun_name='uniform', disagreement_type=gs_params["disagreement_type"],
     )
 
     return sample_disagreement_goals, sample_uniform_goals

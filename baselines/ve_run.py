@@ -2,7 +2,7 @@ import sys
 import os.path as osp
 import tensorflow as tf
 
-from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, make_vec_env
+from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, make_vec_env, get_env_type, get_game_envs
 from baselines.common.tf_util import get_session
 from baselines import logger
 from importlib import import_module
@@ -19,11 +19,10 @@ try:
 except ImportError:
     roboschool = None
 
+_game_envs = get_game_envs(print_out=False)
 
 def train(args, extra_args):
-    env_id = args.env
-    env_type = args.env_type
-
+    env_type, env_id = get_env_type(args, _game_envs)
     alg_kwargs = get_learn_function_defaults(args.alg, env_type)
     alg_kwargs.update(extra_args)
     alg_kwargs.update(eval(args.alg_config))
