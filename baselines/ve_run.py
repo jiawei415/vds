@@ -1,3 +1,4 @@
+import mujoco_py
 import sys
 import os.path as osp
 import tensorflow as tf
