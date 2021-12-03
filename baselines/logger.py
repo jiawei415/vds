@@ -378,6 +378,12 @@ def configure(dir=None, format_strs=None, comm=None, log_suffix=''):
     if dir is None:
         dir = osp.join(tempfile.gettempdir(),
             datetime.datetime.now().strftime("openai-%Y-%m-%d-%H-%M-%S-%f"))
+
+    try:
+        dir += f"_{time.strftime('%Y%m%d%H%M%S', time.localtime())}" # get_time()
+    except:
+        pass
+
     assert isinstance(dir, str)
     dir = os.path.expanduser(dir)
     os.makedirs(os.path.expanduser(dir), exist_ok=True)

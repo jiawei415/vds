@@ -10,15 +10,33 @@ from baselines.her.her_sampler import make_sample_her_transitions
 from baselines.bench.monitor import Monitor
 
 DEFAULT_ENV_PARAMS = {
-    'FetchReach-v1': {
-        'n_cycles': 10,
-    },
+    'Point2D':
+        {'n_cycles': 1, 'batch_size': 64, 'n_batches': 5,},
+    'SawyerReach':
+        {'n_cycles': 5, 'batch_size': 64, 'n_batches': 5,},
+    'FetchReach':
+        {'n_cycles': 5, 'batch_size': 64, 'n_batches': 5,},
+    'Reacher-v2':
+        {'n_cycles': 15, 'batch_size': 64, 'n_batches': 5,},
+    'SawyerDoorPos-v1':
+        {'n_cycles': 10, 'batch_size': 64, 'n_batches': 5,},
+    'SawyerDoorAngle-v1':
+        {'n_cycles': 20, 'batch_size': 64, 'n_batches': 5,},
+    'SawyerDoorFixEnv-v1':
+        {'n_cycles': 50, 'batch_size': 256, 'n_batches': 40,},
+    'PointMass':
+        {'n_cycles': 50, 'batch_size': 256, 'n_batches': 40,},
+    'Fetch':
+        {'n_cycles': 50, 'batch_size': 256, 'n_batches': 40,},
+    'Hand':
+        {'n_cycles': 50, 'batch_size': 256, 'n_batches': 40,},
 }
 
 
 DEFAULT_PARAMS = {
     # env
     'max_u': 1.,  # max absolute value of actions on different coordinates
+    'max_episode_steps': 50,
     # ddpg
     'layers': 3,  # number of layers in the critic/actor networks
     'hidden': 256,  # number of neurons in each hidden layers
@@ -45,6 +63,8 @@ DEFAULT_PARAMS = {
     # normalization
     'norm_eps': 0.01,  # epsilon used for observation normalization
     'norm_clip': 5,  # normalized observations are cropped to this values
+    # random init episode
+    'random_init': 20,
 
     'bc_loss': 0, # whether or not to use the behavior cloning loss as an auxilliary loss
     'q_filter': 0, # whether or not a Q value filter should be used on the Actor outputs

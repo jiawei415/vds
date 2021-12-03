@@ -134,12 +134,12 @@ def make_goal_sampler_factory_random_init_ob(
             sum_disagreement = np.sum(disagreement)
 
             if np.allclose(sum_disagreement, 0):
-                logger.logkv('ve/stats_disag/mean', 0)
-                logger.logkv('ve/stats_disag/std', 0)
+                logger.logkv('ve/stats/disag_mean', 0)
+                logger.logkv('ve/stats/disag_std', 0)
                 disagreement = None
             else:
-                logger.logkv('ve/stats_disag/mean', np.mean(disagreement))
-                logger.logkv('ve/stats_disag/std', np.std(disagreement))
+                logger.logkv('ve/stats/disag_mean', np.mean(disagreement))
+                logger.logkv('ve/stats/disag_std', np.std(disagreement))
                 disagreement /= sum_disagreement
 
             return all_states[np.random.choice(np.arange(n_candidates), p=disagreement)]

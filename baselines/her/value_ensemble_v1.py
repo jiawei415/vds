@@ -170,11 +170,10 @@ class ValueEnsemble:
         self.sess.run(self.stage_ops, feed_dict=dict(zip(self.buffer_ph_tf, batches)))
 
     def logs(self, prefix=''):
+        o_mean, o_std, g_mean, g_std= self.sess.run(self.log_op_list)
         logs = []
-        logs += [('stats_o/mean', np.mean(self.sess.run([self.o_stats.mean])))]
-        logs += [('stats_o/std', np.mean(self.sess.run([self.o_stats.std])))]
-        logs += [('stats_g/mean', np.mean(self.sess.run([self.g_stats.mean])))]
-        logs += [('stats_g/std', np.mean(self.sess.run([self.g_stats.std])))]
+        logs += [('stats/o_mean', np.mean(o_mean)), ('stats/o_std', np.mean(o_std))]
+        logs += [('stats/g_mean', np.mean(g_mean)), ('stats/g_std', np.mean(g_std))]
 
         if prefix != '' and not prefix.endswith('/'):
             return [(prefix + '/' + key, val) for key, val in logs]
@@ -276,6 +275,7 @@ class ValueEnsemble:
             if reuse:
                 vs.reuse_variables()
             self.g_stats = Normalizer(self.dimg, self.norm_eps, self.norm_clip, sess=self.sess)
+        self.log_op_list = [self.o_stats.mean, self.o_stats.std, self.g_stats.mean, self.g_stats.std]
 
         self.V_loss_tf = [None] * self.size_ensemble
         self.V_fun = [None] * self.size_ensemble

@@ -29,7 +29,7 @@ def mpi_average(value):
 
 def train(*, policy, value_ensemble, rollout_worker, evaluator,
           n_epochs, n_test_rollouts, n_cycles, n_batches, ve_n_batches,
-          save_interval, save_path, plotter):
+          save_interval, random_init, save_path, plotter):
     if MPI is not None:
         rank = MPI.COMM_WORLD.Get_rank()
     else:
@@ -37,6 +37,15 @@ def train(*, policy, value_ensemble, rollout_worker, evaluator,
 
     if save_path:
         save_path = os.path.join(save_path, 'itr_{}.pkl')
+
+    if random_init:
+        logger.info('Random initializing ...')
+        rollout_worker.clear_history()
+        # rollout_worker.render = True
+        random_num = int(random_init) // rollout_worker.rollout_batch_size
+        for epi in range(random_num):
+            episode = rollout_worker.generate_rollouts(random_ac=True)
+            policy.store_episode(episode)
 
     logger.info("Training...")
     to_dump = dict(value_ensemble=value_ensemble, policy=policy)
@@ -49,6 +58,7 @@ def train(*, policy, value_ensemble, rollout_worker, evaluator,
 
     # num_timesteps = n_epochs * n_cycles * rollout_length * number of rollout workers
     for epoch in range(n_epochs):
+        time_start = time.time()
         # train
         rollout_worker.clear_history()
         time_rollout, time_ve, time_train = 0, 0, 0
@@ -90,15 +100,24 @@ def train(*, policy, value_ensemble, rollout_worker, evaluator,
         time_eval = time.time() - t
 
         # record total timesteps
-        logger.record_tabular('timesteps', policy.buffer.get_transitions_stored())
+        # logger.record_tabular('timesteps', policy.buffer.get_transitions_stored())
+
+        # record time
+        time_end = time.time()
+        total_time = time_end - time_start
+        logger.record_tabular('epoch/num', epoch)
+        logger.record_tabular('epoch/time(min)/rollout', time_rollout/60)
+        logger.record_tabular('epoch/time(min)/ve', time_ve/60)
+        logger.record_tabular('epoch/time(min)/train', time_train/60)
+        logger.record_tabular('epoch/time(min)/eval', time_eval/60)
+        logger.record_tabular('epoch/time(min)/total', total_time/60)
 
         # record loss
-        logger.record_tabular('ve/loss', np.mean(ve_loss_history))
-        logger.record_tabular('train/critic_loss', np.mean(critic_loss_history))
-        logger.record_tabular('train/actor_loss', np.mean(actor_loss_history))
+        logger.record_tabular('loss/ve_loss', np.mean(ve_loss_history))
+        logger.record_tabular('loss/critic_loss', np.mean(critic_loss_history))
+        logger.record_tabular('loss/actor_loss', np.mean(actor_loss_history))
 
         # record logs
-        logger.record_tabular('epoch', epoch)
         for key, val in evaluator.logs('test'):
             logger.record_tabular(key, mpi_average(val))
         for key, val in rollout_worker.logs('train'):
@@ -107,12 +126,6 @@ def train(*, policy, value_ensemble, rollout_worker, evaluator,
             logger.record_tabular(key, mpi_average(val))
         for key, val in policy.logs('ddpg'):
             logger.record_tabular(key, mpi_average(val))
-
-        # record time
-        logger.record_tabular('time_rollout', time_rollout)
-        logger.record_tabular('time_ve', time_ve)
-        logger.record_tabular('time_train', time_train)
-        logger.record_tabular('time_eval', time_eval)
 
         if rank == 0:
             logger.dump_tabular()
@@ -222,7 +235,7 @@ def play(*, env, policy):
         env.render()
 
 
-def learn(*, env_type, env, eval_env, plotter_env, total_timesteps, num_cpu, allow_run_as_root, bind_to_core,
+def learn(*, env_type, env, eval_env, plotter_env, num_epoch, total_timesteps, num_cpu, allow_run_as_root, bind_to_core,
     seed=None,
     save_interval=5,
     clip_return=True,
@@ -260,9 +273,22 @@ def learn(*, env_type, env, eval_env, plotter_env, total_timesteps, num_cpu, all
     params = config.DEFAULT_PARAMS
     env_name = env.spec.id
     params['env_name'] = env_name
+    if env_name.startswith('Point2D'):
+        params.update(config.DEFAULT_ENV_PARAMS['Point2D'])
+    if env_name.startswith('PointMass'):
+        params.update(config.DEFAULT_ENV_PARAMS['PointMass'])
+    elif env_name.startswith('FetchReach'):
+        params.update(config.DEFAULT_ENV_PARAMS['FetchReach'])
+    elif env_name.startswith('Fetch'):
+        params.update(config.DEFAULT_ENV_PARAMS['Fetch'])
+    elif env_name.startswith('SawyerReach'):
+        params.update(config.DEFAULT_ENV_PARAMS['SawyerReach'])
+    elif env_name.startswith('Hand'):
+        params.update(config.DEFAULT_ENV_PARAMS['Hand'])
     if env_name in config.DEFAULT_ENV_PARAMS:
         params.update(config.DEFAULT_ENV_PARAMS[env_name])  # merge env-specific parameters in
     params.update(**override_params)  # makes it possible to override any parameter
+
     params['rollout_batch_size'] = env.num_envs
     params['num_cpu'] = num_cpu
     params['env_type'] = env_type
@@ -321,6 +347,6 @@ def learn(*, env_type, env, eval_env, plotter_env, total_timesteps, num_cpu, all
 
     return train_fun(
         save_path=save_path, policy=policy, value_ensemble=value_ensemble, rollout_worker=rollout_worker,
-        evaluator=evaluator, n_epochs=n_epochs, n_test_rollouts=params['n_test_rollouts'],
+        evaluator=evaluator, n_epochs=num_epoch, n_test_rollouts=params['n_test_rollouts'], random_init=params['random_init'],
         n_cycles=params['n_cycles'], n_batches=params['n_batches'], ve_n_batches=params['ve_n_batches'],
         save_interval=save_interval, plotter=plotter)

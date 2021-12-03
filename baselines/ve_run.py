@@ -26,6 +26,7 @@ def train(args, extra_args):
 
     alg_kwargs = get_learn_function_defaults(args.alg, env_type)
     alg_kwargs.update(extra_args)
+    alg_kwargs.update(eval(args.alg_config))
 
     env = build_env(args)
     eval_env = build_env(args)
@@ -39,6 +40,7 @@ def train(args, extra_args):
         env=env,
         eval_env=eval_env,
         plotter_env=plotter_env,
+        num_epoch=args.num_epoch,
         num_cpu=args.num_cpu,
         allow_run_as_root=args.allow_run_as_root,
         bind_to_core=args.bind_to_core,
@@ -123,6 +125,7 @@ def main(args):
 
     logger.info(args, extra_args)
 
+    args.log_path = osp.join(args.log_path, f"vds_{args.env}_{args.seed}")
     if MPI is None or MPI.COMM_WORLD.Get_rank() == 0:
         rank = 0
         configure_logger(args.log_path)
