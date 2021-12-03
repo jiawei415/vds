@@ -176,6 +176,8 @@ def common_arg_parser():
     # parser.add_argument('--save_path', help='Path to save trained model to', default=None, type=str)
     parser.add_argument('--save_video_interval', help='Save video every x steps (0 = disabled)', default=0, type=int)
     parser.add_argument('--save_video_length', help='Length of recorded video. Default: 200', default=0, type=int)
+    parser.add_argument('--save_path', help='Path to save trained model to', default=None, type=str)
+    parser.add_argument('--load_path', help='Path to load trained model to', default=None, type=str)
     parser.add_argument('--log_path', help='Directory to save learning curve data.', default="~/results", type=str)
     parser.add_argument('--play', default=False, action='store_true')
     parser.add_argument('--allow_run_as_root', default=False, action='store_true')

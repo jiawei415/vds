@@ -1,5 +1,6 @@
 import mujoco_py
 import sys
+import os
 import os.path as osp
 import tensorflow as tf
 
@@ -34,6 +35,11 @@ def train(args, extra_args):
 
     logger.info('Training {} on {}:{} with arguments \n{}'.format(args.alg, env_type, env_id, alg_kwargs))
 
+    ## make save dir
+    if args.save_path:
+        args.save_path = os.path.join(logger.get_dir(), args.save_path)
+        os.makedirs(os.path.expanduser(args.save_path), exist_ok=True)
+
     from baselines.her.ve_her import learn
     policy, value_ensemble = learn(
         env_type=env_type,
@@ -44,7 +50,7 @@ def train(args, extra_args):
         num_cpu=args.num_cpu,
         allow_run_as_root=args.allow_run_as_root,
         bind_to_core=args.bind_to_core,
-        save_path=args.log_path,
+        save_path=args.save_path,
         seed=args.seed,
         total_timesteps=int(args.num_timesteps),
         policy_pkl=None,#args.policy_pkl,

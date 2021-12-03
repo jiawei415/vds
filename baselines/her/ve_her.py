@@ -36,7 +36,9 @@ def train(*, policy, value_ensemble, rollout_worker, evaluator,
         rank = 0
 
     if save_path:
-        save_path = os.path.join(save_path, 'itr_{}.pkl')
+        latest_policy_path = os.path.join(save_path, 'policy_latest.pkl')
+        best_policy_path = os.path.join(save_path, 'policy_best.pkl')
+        periodic_policy_path = os.path.join(save_path, 'policy_{}.pkl')
 
     if random_init:
         logger.info('Random initializing ...')
@@ -56,6 +58,7 @@ def train(*, policy, value_ensemble, rollout_worker, evaluator,
     #     episode = rollout_worker.generate_rollouts()
     #     value_ensemble.store_episode(episode)
 
+    best_success_rate = -1
     # num_timesteps = n_epochs * n_cycles * rollout_length * number of rollout workers
     for epoch in range(n_epochs):
         time_start = time.time()
@@ -134,9 +137,17 @@ def train(*, policy, value_ensemble, rollout_worker, evaluator,
                 plotter(epoch, goal_history)
             goal_history = []
 
+        # save the policy if it's better than the previous ones
+        success_rate = mpi_average(evaluator.current_success_rate())
+        if rank == 0 and success_rate > best_success_rate and save_path:
+            best_success_rate = success_rate
+            logger.info('New best success rate: {}. Saving policy to {} ...'.format(best_success_rate, best_policy_path))
+            joblib.dump(to_dump, best_policy_path, compress=3)
         if rank == 0 and save_interval > 0 and epoch % save_interval == 0 and save_path:
+            policy_path = periodic_policy_path.format(epoch)
+            logger.info('Saving periodic policy to {} ...'.format(policy_path))
             # to_dump['samples'] = rollout_worker.venv.reset_history()
-            joblib.dump(to_dump, save_path.format(epoch), compress=3)
+            joblib.dump(to_dump, policy_path, compress=3)
 
         # make sure that different threads have different seeds
         local_uniform = np.random.uniform(size=(1,))
