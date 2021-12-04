@@ -107,7 +107,7 @@ class RolloutWorker:
             # success = np.array([i.get('is_success', 0.0) for i in info])
             success = np.array([i['is_success'] for i in info])
 
-            if any(done):
+            if any(done) or t == self.T-1:
                 # here we assume all environments are done is ~same number of steps, so we terminate rollouts whenever any of the envs returns done
                 # trick with using vecenvs is not to add the obs from the environments that are "done", because those are already observations
                 # after a reset
@@ -115,7 +115,10 @@ class RolloutWorker:
 
             for i, info_dict in enumerate(info):
                 for idx, key in enumerate(self.info_keys):
-                    info_values[idx][t, i] = info[i][key]
+                    try:
+                        info_values[idx][t, i] = info[i][key]
+                    except:
+                        pass
 
             if np.isnan(o_new).any():
                 self.logger.warn('NaN caught during rollout generation. Trying again...')

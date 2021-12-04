@@ -35,10 +35,6 @@ def train(args, extra_args):
 
     logger.info('Training {} on {}:{} with arguments \n{}'.format(args.alg, env_type, env_id, alg_kwargs))
 
-    ## make save dir
-    if args.save_path:
-        args.save_path = os.path.join(logger.get_dir(), args.save_path)
-        os.makedirs(os.path.expanduser(args.save_path), exist_ok=True)
 
     from baselines.her.ve_her import learn
     policy, value_ensemble = learn(
@@ -139,12 +135,16 @@ def main(args):
         rank = MPI.COMM_WORLD.Get_rank()
         configure_logger(args.log_path, format_strs=[])
 
+    ## make save dir
+    if args.save_path:
+        args.save_path = os.path.join(logger.get_dir(), args.save_path)
+        os.makedirs(os.path.expanduser(args.save_path), exist_ok=True)
+
     policy, value_ensemble, env = train(args, extra_args)
 
-    if args.log_path is not None and rank == 0:
-        save_path = osp.expanduser(args.log_path)
-        policy.save(osp.join(save_path, 'final_policy_params.joblib'))
-        value_ensemble.save(osp.join(save_path, 'final_ve_params.joblib'))
+    if args.save_log is not None and rank == 0:
+        policy.save(osp.join(args.save_log, 'final_policy_params.joblib'))
+        value_ensemble.save(osp.join(args.save_log, 'final_ve_params.joblib'))
 
     env.close()
 

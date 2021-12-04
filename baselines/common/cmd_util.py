@@ -81,6 +81,10 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
     elif env_type == 'goal':
         from baselines.envs.goal_sampler_env_wrapper import GoalSamplerEnvWrapper
         env = gym.make(env_id, **env_kwargs)
+        if not hasattr(env, '_max_episode_steps'):
+            env = gym.wrappers.TimeLimit(env, max_episode_steps=100)
+        else:
+            env._max_episode_steps = 100
         env = GoalSamplerEnvWrapper(env)
     else:
         env = gym.make(env_id, **env_kwargs)
