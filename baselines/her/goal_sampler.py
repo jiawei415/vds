@@ -136,7 +136,11 @@ def make_goal_sampler_factory_random_init_ob(
             if disagreement_type == "min":
                     disagreement = np.max(disagreement) - disagreement + 1e-6
             priority = disagreement**priority_temperature
-            priority = priority / np.sum(priority)
+            sum_priority = np.sum(priority)
+            if np.allclose(sum_priority, 0):
+                priority = None
+            else:
+                priority = priority / sum_priority
 
             # sum_disagreement = np.sum(disagreement)
             # if np.allclose(sum_disagreement, 0):
