@@ -13,9 +13,12 @@ class GoalSamplerEnvWrapper(Wrapper):
     def reset(self, *, reset_goal=True):
         self.env._elapsed_steps = 0  # this is a hack for gym.wrappers.time_limit
         # below: self.unwrapped.reset() (gym.RobotEnv)
-        did_reset_sim = False
-        while not did_reset_sim:
-            did_reset_sim = self.unwrapped._reset_sim()
+        if hasattr(self.unwrapped, '_reset_sim'):
+            did_reset_sim = False
+            while not did_reset_sim:
+                did_reset_sim = self.unwrapped._reset_sim()
+        else:
+            self.env.reset()
         if reset_goal:
             obs = self.unwrapped._get_obs()
             self.unwrapped.goal = self.sample_goal_fun(obs_dict=obs)

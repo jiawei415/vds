@@ -7,3 +7,24 @@ for grid_name in ['a', 'b', 'c']:
         kwargs={'grid_name': grid_name, 'reward_type': 'sparse'},
         max_episode_steps=50,
     )
+    register(
+        id='PointMassEmptyEnv-v1',
+        entry_point='baselines.envs.pointmass:PointMassEnv',
+        kwargs={
+            'room_type': 'empty', # ['empty', 'wall', 'rooms']
+        }
+    )
+    register(
+        id='PointMassWallEnv-v1',
+        entry_point='baselines.envs.pointmass:PointMassEnv',
+        kwargs={
+            'room_type': 'wall',
+        }
+    )
+    register(
+        id='PointMassRoomsEnv-v1',
+        entry_point='baselines.envs.pointmass:PointMassEnv',
+        kwargs={
+            'room_type': 'rooms',
+        }
+    )

@@ -120,6 +120,9 @@ def prepare_params(kwargs):
     def make_env(subrank=None):
         env = gym.make(env_name)
         if kwargs['env_type'] == 'goal':
+            if env_name.startswith('Point'):
+                from baselines.envs.multi_world_wrapper import PointGoalWrapper
+                env = PointGoalWrapper(env)
             from baselines.envs.goal_sampler_env_wrapper import GoalSamplerEnvWrapper
             env = GoalSamplerEnvWrapper(env)
         if subrank is not None and logger.get_dir() is not None:

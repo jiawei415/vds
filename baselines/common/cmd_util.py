@@ -85,6 +85,9 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
             env = gym.wrappers.TimeLimit(env, max_episode_steps=100)
         else:
             env._max_episode_steps = 100
+        if env_id.startswith('Point'):
+            from baselines.envs.multi_world_wrapper import PointGoalWrapper
+            env = PointGoalWrapper(env)
         env = GoalSamplerEnvWrapper(env)
     else:
         env = gym.make(env_id, **env_kwargs)
