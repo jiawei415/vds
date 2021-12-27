@@ -2,12 +2,12 @@
 
 envname=$1
 seed=$3
-num_env=8
+num_env=16
 num_epoch=50
 alg_confg="{
-    'size_ensemble':8, \
+    'size_ensemble':16, \
     'disagreement_fun_name':'var', \
-    'disagreement_type':'min', \
+    'disagreement_type':'max', \
     'priority_temperature':1.0,
 }"
 

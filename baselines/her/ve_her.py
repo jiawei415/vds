@@ -298,6 +298,8 @@ def learn(*, env_type, env, eval_env, plotter_env, num_epoch, total_timesteps, n
         params.update(config.DEFAULT_ENV_PARAMS['Hand'])
     if env_name in config.DEFAULT_ENV_PARAMS:
         params.update(config.DEFAULT_ENV_PARAMS[env_name])  # merge env-specific parameters in
+    params['ve_n_batches'] = params['n_batches']
+    params['ve_batch_size'] = params['batch_size']
     params.update(**override_params)  # makes it possible to override any parameter
 
     params['rollout_batch_size'] = env.num_envs
