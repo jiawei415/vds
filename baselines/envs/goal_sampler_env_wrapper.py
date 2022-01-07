@@ -75,3 +75,21 @@ class GoalSamplerEnvWrapper(Wrapper):
             spacing=(spacing, spacing),
         )
         return candidates, plotter_info
+
+
+class ReacherGoalSamplerEnvWrapper(Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.sample_goal_fun = None
+
+    def update_goal_sampler(self, goal_sampler):
+        self.sample_goal_fun = goal_sampler
+
+    def reset(self, *, reset_goal=True):
+        obs = self.env.reset()
+        if reset_goal:
+            self.env.goal = self.sample_goal_fun(obs_dict=obs)
+        else:
+            self.env.goal = self.env._sample_goal().copy()
+        obs['desired_goal'] = self.env.goal
+        return obs

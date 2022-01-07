@@ -79,7 +79,7 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
         gamestate = gamestate or retro.State.DEFAULT
         env = retro_wrappers.make_retro(game=env_id, max_episode_steps=10000, use_restricted_actions=retro.Actions.DISCRETE, state=gamestate)
     elif env_type == 'goal':
-        from baselines.envs.goal_sampler_env_wrapper import GoalSamplerEnvWrapper
+        from baselines.envs.goal_sampler_env_wrapper import GoalSamplerEnvWrapper, ReacherGoalSamplerEnvWrapper
         env = gym.make(env_id, **env_kwargs)
         if not hasattr(env, '_max_episode_steps'):
             env = gym.wrappers.TimeLimit(env, max_episode_steps=100)
@@ -88,7 +88,13 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
         if env_id.startswith('Point'):
             from baselines.envs.multi_world_wrapper import PointGoalWrapper
             env = PointGoalWrapper(env)
-        env = GoalSamplerEnvWrapper(env)
+            env = GoalSamplerEnvWrapper(env)
+        elif env_id.startswith('Reacher'):
+            from baselines.envs.multi_world_wrapper import ReacherGoalWrapper
+            env = ReacherGoalWrapper(env)
+            env = ReacherGoalSamplerEnvWrapper(env)
+        else:
+            env = GoalSamplerEnvWrapper(env)
     else:
         env = gym.make(env_id, **env_kwargs)
 
@@ -170,7 +176,7 @@ def common_arg_parser():
     Create an argparse.ArgumentParser for run_mujoco.py.
     """
     parser = arg_parser()
-    parser.add_argument('--env', help='environment ID', type=str, default='FetchReach-v1')
+    parser.add_argument('--env', help='environment ID', type=str, default='Reacher-v2')
     parser.add_argument('--env_type', help='type of environment, used when the environment type cannot be automatically determined', type=str, default='goal')
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--alg', help='Algorithm', type=str, default='ve_her')

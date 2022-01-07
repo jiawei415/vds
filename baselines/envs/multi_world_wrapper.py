@@ -19,9 +19,11 @@ class ReacherGoalWrapper(Wrapper):
                                 ])
 
         self.threshold = threshold
+        self.goal = self._sample_goal()
 
     def reset(self):
         obs = self.env.reset()
+        self.goal = self._sample_goal()
         obs_dict = self.obs_to_dict(obs)
         return obs_dict
 
@@ -45,7 +47,7 @@ class ReacherGoalWrapper(Wrapper):
         obs_ = np.concatenate([obs[:4], obs[6:8], obs_ag])
         obs_dict = {
             'observation': obs_,
-            'desired_goal': obs_g,
+            'desired_goal': self.goal,
             'achieved_goal': obs_ag
         }
         return obs_dict
@@ -63,6 +65,12 @@ class ReacherGoalWrapper(Wrapper):
     def render(self, mode='human'):
         return self.env.render()
 
+    def _sample_goal(self):
+        while True:
+            goal = np.random.uniform(low=-.2, high=.2, size=2)
+            if np.linalg.norm(goal) < 0.2:
+                break
+        return goal
 
 # for point env 
 class PointGoalWrapper(Wrapper):

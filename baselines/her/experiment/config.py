@@ -107,7 +107,12 @@ def cached_make_env(make_env):
     if make_env not in CACHED_ENVS:
         env = make_env()
         CACHED_ENVS[make_env] = env
-        env.goal = env.unwrapped._sample_goal()
+        if hasattr(env.unwrapped, '_sample_goal'):
+            env.goal = env.unwrapped._sample_goal()
+        elif hasattr(env.env, '_sample_goal'):
+            env.goal = env.env._sample_goal()
+        else:
+            raise NotImplementedError
         env.reset(reset_goal=False)
     return CACHED_ENVS[make_env]
 
@@ -120,11 +125,17 @@ def prepare_params(kwargs):
     def make_env(subrank=None):
         env = gym.make(env_name)
         if kwargs['env_type'] == 'goal':
+            from baselines.envs.goal_sampler_env_wrapper import GoalSamplerEnvWrapper, ReacherGoalSamplerEnvWrapper
             if env_name.startswith('Point'):
                 from baselines.envs.multi_world_wrapper import PointGoalWrapper
                 env = PointGoalWrapper(env)
-            from baselines.envs.goal_sampler_env_wrapper import GoalSamplerEnvWrapper
-            env = GoalSamplerEnvWrapper(env)
+                env = GoalSamplerEnvWrapper(env)
+            elif env_name.startswith('Reacher'):
+                from baselines.envs.multi_world_wrapper import ReacherGoalWrapper
+                env = ReacherGoalWrapper(env)
+                env = ReacherGoalSamplerEnvWrapper(env)
+            else:
+                env = GoalSamplerEnvWrapper(env)
         if subrank is not None and logger.get_dir() is not None:
             try:
                 from mpi4py import MPI
@@ -262,9 +273,13 @@ def configure_disagreement(params, value_ensemble, policy):
     env = cached_make_env(params['make_env'])
     # env.get_reset()
 
+    if params['env_name'].startswith('Reacher'):
+        sample_goals = env.env._sample_goal
+    else:
+        sample_goals = env.unwrapped._sample_goal
     disagreement_params = dict(
         # 'static_init_obs': env.static_init_obs,
-        sample_goals_fun=lambda size: [env.unwrapped._sample_goal() for _ in range(size)],
+        sample_goals_fun=lambda size: [sample_goals() for _ in range(size)],
         policy=policy,
         value_ensemble=value_ensemble,
     )
